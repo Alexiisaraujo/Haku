@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NEKO LIFE 🐱</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg:      #0d0e14;
+  --bg2:     #13151f;
+  --panel:   #1c1f2e;
+  --border:  #2a2d44;
+  --glow:    #3d4170;
+  --accent:  #ff9de2;
+  --accent2: #ffe566;
+  --accent3: #7effd4;
+  --dim:     #4a4d6a;
+  --bright:  #ffffff;
+  --fp: 'Press Start 2P', monospace;
+  --fl: 'VT323', monospace;
+  --r: 6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:#c8ccee;font-family:var(--fl);font-size:18px;-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--glow);border-radius:2px;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100dvh;}
+.screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+#game-screen.active{justify-content:flex-start;padding-bottom:24px;}
+
+/* ── WELCOME ── */
+#welcome-screen {
+  background: radial-gradient(ellipse at 50% 20%, #2a1a3e 0%, #0d0e14 70%);
+}
+.welcome-box{
+  width:min(370px,94vw);
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+  padding:28px 20px;
+}
+.game-logo{
+  font-family:var(--fp);font-size:clamp(16px,6vw,22px);
+  color:var(--accent);letter-spacing:4px;
+  text-shadow:0 0 20px var(--accent),0 0 40px #ff9de260;
+  text-align:center;
+}
+.game-sub{font-family:var(--fl);font-size:20px;color:var(--dim);letter-spacing:2px;}
+.paw-deco{color:var(--accent);font-size:14px;letter-spacing:6px;opacity:.5;}
+
+/* CAT SELECTOR */
+.cat-selector{width:100%;display:flex;flex-direction:column;gap:10px;}
+.cat-selector-title{
+  font-family:var(--fp);font-size:8px;color:var(--dim);letter-spacing:2px;text-align:center;
+}
+.cats-row{display:flex;gap:10px;justify-content:center;}
+.cat-card{
+  flex:1;max-width:110px;
+  background:var(--panel);border:2px solid var(--border);border-radius:var(--r);
+  padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+}
+.cat-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.cat-card.selected{border-color:var(--accent);box-shadow:0 0 20px #ff9de240;}
+.cat-card.locked{opacity:.5;cursor:not-allowed;}
+.cat-card.locked:hover{transform:none;border-color:var(--border);}
+.cat-card-name{font-family:var(--fp);font-size:7px;color:var(--accent);letter-spacing:1px;}
+.cat-card-hint{font-family:var(--fl);font-size:14px;color:var(--dim);text-align:center;line-height:1.2;}
+.lock-badge{
+  position:absolute;top:4px;right:4px;
+  font-size:10px;background:#1a1a1a;border-radius:3px;padding:1px 3px;
+}
+.cat-stat-pills{display:flex;flex-direction:column;gap:3px;width:100%;}
+.cat-stat-pill{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--fl);font-size:13px;
+  background:var(--bg2);border-radius:2px;padding:1px 4px;
+}
+.pill-label{color:var(--dim);}
+.pill-val{color:var(--accent2);}
+
+/* INPUT */
+.name-row{width:100%;display:flex;flex-direction:column;gap:6px;}
+.name-row label{font-family:var(--fp);font-size:8px;color:var(--dim);letter-spacing:1px;}
+.name-row input{
+  width:100%;background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);
+  color:var(--accent);font-family:var(--fl);font-size:24px;padding:8px 12px;
+  outline:none;transition:border-color .2s;letter-spacing:2px;
+}
+.name-row input:focus{border-color:var(--accent);box-shadow:0 0 10px #ff9de230;}
+.name-row input::placeholder{color:var(--dim);font-size:18px;}
+
+.btn{
+  font-family:var(--fp);font-size:9px;letter-spacing:1px;padding:13px 26px;
+  border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;outline:none;
+}
+.btn:active{transform:scale(.96);}
+.btn-primary{background:var(--accent);color:#1a0a1a;box-shadow:0 0 20px #ff9de250,0 3px 0 #a03060;}
+.btn-primary:hover{box-shadow:0 0 30px var(--accent),0 3px 0 #a03060;}
+.btn-danger{background:#ff4560;color:#fff;box-shadow:0 0 16px #ff456040,0 3px 0 #880020;}
+
+/* ── GAME SCREEN ── */
+#game-screen{width:100%;max-width:420px;margin:0 auto;}
+
+/* Header */
+.game-header{
+  width:100%;background:var(--bg2);border-bottom:2px solid var(--border);
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.header-left{display:flex;flex-direction:column;gap:2px;}
+.pet-name-display{
+  font-family:var(--fp);font-size:10px;color:var(--accent);
+  text-shadow:0 0 8px var(--accent);letter-spacing:1px;
+}
+.cat-breed-tag{font-family:var(--fl);font-size:15px;color:var(--dim);}
+.header-right{display:flex;align-items:center;gap:10px;}
+.evo-badge{
+  font-family:var(--fl);font-size:17px;color:var(--accent2);
+  background:#221800;border:1px solid #ffe56640;padding:2px 8px;border-radius:20px;
+}
+.timer{font-family:var(--fp);font-size:9px;color:var(--dim);}
+
+/* Coins */
+.coin-display{
+  display:flex;align-items:center;gap:4px;
+  font-family:var(--fp);font-size:9px;color:var(--accent2);
+}
+
+/* Pet viewport */
+.pet-viewport{
+  width:100%;height:210px;
+  background:linear-gradient(180deg,#0a1a0f 0%,#0d2015 60%,#112218 100%);
+  border-bottom:2px solid var(--border);
+  position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+}
+.pet-viewport::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);
+  pointer-events:none;z-index:10;
+}
+.pet-viewport::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 30%,#00ff4415 0%,transparent 65%);
+  pointer-events:none;
+}
+.cat-stage-canvas{image-rendering:pixelated;image-rendering:crisp-edges;z-index:2;position:relative;}
+.status-ribbon{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:4px 12px;font-family:var(--fl);font-size:19px;
+  text-align:center;letter-spacing:1px;z-index:5;
+  background:linear-gradient(transparent,rgba(0,0,0,.6));
+}
+.bubble{
+  position:absolute;top:8px;right:36px;font-size:22px;
+  opacity:0;pointer-events:none;z-index:20;
+}
+.bubble.pop{opacity:1;animation:bpop .6s ease forwards;}
+@keyframes bpop{
+  0%{transform:scale(0) translateY(0);opacity:1;}
+  60%{transform:scale(1.3) translateY(-12px);opacity:1;}
+  100%{transform:scale(1) translateY(-22px);opacity:0;}
+}
+
+/* Stats */
+.stats-panel{
+  width:100%;background:var(--panel);padding:12px 14px;
+  display:flex;flex-direction:column;gap:9px;border-bottom:2px solid var(--border);
+}
+.stat-row{display:flex;align-items:center;gap:8px;}
+.stat-ico{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+.stat-lbl{font-family:var(--fp);font-size:7px;color:var(--dim);width:68px;flex-shrink:0;letter-spacing:1px;}
+.bar-wrap{flex:1;display:flex;align-items:center;gap:6px;}
+.bar-bg{flex:1;height:12px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width .5s ease;position:relative;}
+.bar-fill::after{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:rgba(255,255,255,.18);}
+.bar-hunger  {background:#ff8c42;box-shadow:0 0 6px #ff8c4270;}
+.bar-happy   {background:#d86aff;box-shadow:0 0 6px #d86aff70;}
+.bar-energy  {background:#42d8ff;box-shadow:0 0 6px #42d8ff70;}
+.bar-health  {background:#ff4560;box-shadow:0 0 6px #ff456070;}
+.bar-val{font-family:var(--fp);font-size:8px;color:var(--bright);width:26px;text-align:right;flex-shrink:0;}
+.bar-fill.low{animation:low-pulse 1s ease-in-out infinite;}
+@keyframes low-pulse{0%,100%{opacity:1;}50%{opacity:.35};}
+
+/* Actions */
+.actions-grid{
+  width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:12px 14px;background:var(--bg2);
+}
+.act-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  height:62px;background:var(--panel);border:2px solid var(--border);border-radius:var(--r);
+  cursor:pointer;transition:all .15s;color:#c8ccee;position:relative;overflow:hidden;
+}
+.act-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.04),transparent 60%);}
+.act-btn:hover{border-color:var(--accent);box-shadow:0 0 14px #ff9de230;transform:translateY(-2px);}
+.act-btn:active{transform:translateY(1px) scale(.97);}
+.act-btn:disabled{opacity:.3;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.act-ico{font-size:26px;}
+.act-lbl{font-family:var(--fp);font-size:7px;color:var(--dim);letter-spacing:1px;}
+#btn-feed:hover  {border-color:#ff8c42;box-shadow:0 0 14px #ff8c4240;}
+#btn-play:hover  {border-color:#d86aff;box-shadow:0 0 14px #d86aff40;}
+#btn-sleep:hover {border-color:#42d8ff;box-shadow:0 0 14px #42d8ff40;}
+#btn-heal:hover  {border-color:#ff4560;box-shadow:0 0 14px #ff456040;}
+#btn-pet:hover   {border-color:var(--accent);box-shadow:0 0 14px #ff9de240;}
+#btn-groom:hover {border-color:var(--accent3);box-shadow:0 0 14px #7effd440;}
+
+/* Bottom bar */
+.bottom-bar{
+  width:100%;display:flex;padding:10px 14px;gap:10px;align-items:center;
+  background:var(--bg2);border-top:2px solid var(--border);
+  justify-content:space-between;
+}
+.restart-zone{padding:10px 14px;display:flex;justify-content:center;width:100%;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--panel);border:2px solid var(--accent);border-radius:4px;
+  padding:8px 18px;font-family:var(--fl);font-size:21px;color:var(--accent);
+  text-shadow:0 0 8px var(--accent);opacity:0;transition:all .25s;
+  pointer-events:none;z-index:100;white-space:nowrap;box-shadow:0 0 18px #ff9de230;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.warn{border-color:#ff4560;color:#ff4560;text-shadow:0 0 8px #ff4560;box-shadow:0 0 18px #ff456030;}
+
+/* UNLOCK MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:#000a;z-index:200;
+  display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal-box{
+  background:var(--panel);border:2px solid var(--accent);border-radius:10px;
+  padding:28px 24px;max-width:320px;width:90%;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  box-shadow:0 0 40px #ff9de240;animation:modal-in .3s ease;
+}
+@keyframes modal-in{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-title{font-family:var(--fp);font-size:11px;color:var(--accent);letter-spacing:2px;}
+.modal-desc{font-family:var(--fl);font-size:19px;color:#c8ccee;line-height:1.4;}
+.modal-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+/* Responsive */
+@media(min-width:420px){
+  #game-screen{border-left:2px solid var(--border);border-right:2px solid var(--border);min-height:100dvh;}
+}
+@media(max-height:680px){
+  .pet-viewport{height:165px;}
+  .act-btn{height:54px;}
+}
+  </style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="welcome-screen" class="screen active">
+  <div class="welcome-box">
+    <div class="paw-deco">🐾 · 🐾 · 🐾</div>
+    <canvas id="welcome-canvas" width="80" height="80" style="image-rendering:pixelated;"></canvas>
+    <div class="game-logo">NEKO LIFE</div>
+    <div class="game-sub">elige tu gatita</div>
+
+    <div class="cat-selector">
+      <div class="cat-selector-title">── SELECCIONAR GATA ──</div>
+      <div class="cats-row" id="cats-row"></div>
+    </div>
+
+    <div class="name-row">
+      <label>Apodo para tu gata:</label>
+      <input id="pet-name-input" maxlength="12" placeholder="Dejar vacío = nombre propio"/>
+    </div>
+    <button id="start-btn" class="btn btn-primary">[ COMENZAR ]</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="screen">
+  <header class="game-header">
+    <div class="header-left">
+      <div class="pet-name-display" id="pet-name-display">---</div>
+      <div class="cat-breed-tag" id="cat-breed-tag"></div>
+    </div>
+    <div class="header-right">
+      <div class="coin-display">🐟 <span id="coin-count">0</span></div>
+      <div class="evo-badge" id="evo-badge">🥚 HUEVO</div>
+      <div class="timer" id="timer">00:00</div>
+    </div>
+  </header>
+
+  <div class="pet-viewport">
+    <canvas id="game-canvas" width="160" height="160" class="cat-stage-canvas"></canvas>
+    <div class="status-ribbon" id="status-ribbon">Esperando nacer...</div>
+    <div class="bubble" id="bubble"></div>
+  </div>
+
+  <div class="stats-panel">
+    <div class="stat-row">
+      <span class="stat-ico">🍣</span>
+      <span class="stat-lbl">HAMBRE</span>
+      <div class="bar-wrap">
+        <div class="bar-bg"><div class="bar-fill bar-hunger" id="fill-hunger"></div></div>
+        <span class="bar-val" id="val-hunger">100</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-ico">😸</span>
+      <span class="stat-lbl">MIMOS</span>
+      <div class="bar-wrap">
+        <div class="bar-bg"><div class="bar-fill bar-happy" id="fill-happy"></div></div>
+        <span class="bar-val" id="val-happy">100</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-ico">⚡</span>
+      <span class="stat-lbl">ENERGÍA</span>
+      <div class="bar-wrap">
+        <div class="bar-bg"><div class="bar-fill bar-energy" id="fill-energy"></div></div>
+        <span class="bar-val" id="val-energy">100</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-ico">🏥</span>
+      <span class="stat-lbl">SALUD</span>
+      <div class="bar-wrap">
+        <div class="bar-bg"><div class="bar-fill bar-health" id="fill-health"></div></div>
+        <span class="bar-val" id="val-health">100</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions-grid">
+    <button class="act-btn" id="btn-feed"  onclick="act.feed()"><span class="act-ico">🍣</span><span class="act-lbl">ALIMENTAR</span></button>
+    <button class="act-btn" id="btn-play"  onclick="act.play()"><span class="act-ico">🧶</span><span class="act-lbl">JUGAR</span></button>
+    <button class="act-btn" id="btn-sleep" onclick="act.sleep()"><span class="act-ico">😴</span><span class="act-lbl">DORMIR</span></button>
+    <button class="act-btn" id="btn-heal"  onclick="act.heal()"><span class="act-ico">💊</span><span class="act-lbl">CURAR</span></button>
+    <button class="act-btn" id="btn-pet"   onclick="act.pet()"><span class="act-ico">🤚</span><span class="act-lbl">MIMAR</span></button>
+    <button class="act-btn" id="btn-groom" onclick="act.groom()"><span class="act-ico">✨</span><span class="act-lbl">ACICALAR</span></button>
+  </div>
+
+  <div class="restart-zone" id="restart-zone" style="display:none;">
+    <button class="btn btn-danger" onclick="game.reset()">[ NUEVA PARTIDA ]</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- UNLOCK MODAL -->
+<div class="modal-overlay" id="unlock-modal">
+  <div class="modal-box">
+    <canvas id="modal-canvas" width="80" height="80" style="image-rendering:pixelated;"></canvas>
+    <div class="modal-title" id="modal-title">¡NUEVA GATA!</div>
+    <div class="modal-desc" id="modal-desc">Descripción</div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="closeModal()">[ ¡GENIAL! ]</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════
+//  CAT DEFINITIONS
+// ══════════════════════════════════════════
+const CATS = {
+  haku: {
+    id:'haku', name:'Haku', breed:'Gata negra mágica',
+    unlockMsg:'¡Haku siempre estuvo contigo! 🖤',
+    unlockReq: null, // siempre disponible
+    palette:{
+      body:'#1a1a1a', shadow:'#111111', chest:'#333333',
+      earIn:'#ffb3c6', nose:'#e87aa0', noseLo:'#ffb3c6',
+      eye1:'#7ec8a0', eye2:'#5aaa80', whisker:'#aaaaaa',
+      pad:'#d87090', tail:'#1a1a1a', special:'#ffd700',
+    },
+    // Stats bonus: multiplicador de decay (menor = mejor)
+    decayMult:{ hunger:1.0, happy:1.0, energy:1.0, health:1.0 },
+    specialty:'Cola siempre en movimiento 🖤',
+    startStats:{ hunger:80, happy:80, energy:80, health:100 },
+  },
+  orus: {
+    id:'orus', name:'Orus', breed:'Gata blanca serena',
+    unlockMsg:'¡Orus se desbloqueó! Es calmada y come poco 🤍',
+    unlockReq:{ type:'evo', stage:'adult', catId:'haku' },
+    palette:{
+      body:'#f0f0f0', shadow:'#cccccc', chest:'#ffffff',
+      earIn:'#ffcce0', nose:'#ff88aa', noseLo:'#ffaac0',
+      eye1:'#66aaff', eye2:'#4488ee', whisker:'#888888',
+      pad:'#ffaacc', tail:'#e8e8e8', special:'#aaddff',
+    },
+    decayMult:{ hunger:0.6, happy:0.8, energy:0.9, health:0.7 },
+    specialty:'Come poco y es muy sana 🤍',
+    startStats:{ hunger:90, happy:85, energy:90, health:100 },
+  },
+  bebesita: {
+    id:'bebesita', name:'Bebesita', breed:'Gata atigrada bebé',
+    unlockMsg:'¡Bebesita desbloqueada! Necesita muchos mimos 🧡',
+    unlockReq:{ type:'time', minutes:10 },
+    palette:{
+      body:'#d4956a', shadow:'#b07040', chest:'#f0c090',
+      earIn:'#ff9999', nose:'#cc4444', noseLo:'#ee6666',
+      eye1:'#44cc66', eye2:'#22aa44', whisker:'#ccaa88',
+      pad:'#cc7755', tail:'#b06030', special:'#ff9966',
+      stripes:'#8b5e3c',
+    },
+    decayMult:{ hunger:1.2, happy:0.5, energy:1.1, health:0.9 },
+    specialty:'Necesita mimos constantes 🧡',
+    startStats:{ hunger:75, happy:95, energy:80, health:100 },
+  },
+};
+
+const EVO = {
+  egg:   { sec:0,   label:'🥚 HUEVO',   scale:1.0 },
+  baby:  { sec:30,  label:'🐱 BEBÉ',    scale:1.0 },
+  child: { sec:120, label:'😺 NIÑA',    scale:1.0 },
+  teen:  { sec:300, label:'🐈 JOVEN',   scale:1.0 },
+  adult: { sec:600, label:'👑 ADULTA',  scale:1.0 },
+};
+const EVO_KEYS = ['egg','baby','child','teen','adult'];
+
+const DECAY_BASE = {
+  egg:   { hunger:.5,  happy:.3,  energy:.4,  health:0   },
+  baby:  { hunger:2,   happy:1.5, energy:1.5, health:.5  },
+  child: { hunger:3,   happy:2,   energy:2,   health:.5  },
+  teen:  { hunger:4,   happy:3,   energy:2.5, health:.8  },
+  adult: { hunger:5,   happy:4,   energy:3,   health:1   },
+};
+
+const STATUS_TEXT = {
+  dead:'...dulces sueños... 😿', sick:'¡Ay, me siento mal! 🤒',
+  sad:'Estoy tristita... 😿', happy:'¡Purrr~ estoy feliz! 😸',
+  neutral:'~ronroneo suave~ 😺', sleeping:'💤 Zzzz...',
+  eating:'¡Ñom ñom ñom! 🐟',
+};
+const STATUS_COL = {
+  dead:'#ff4560', sick:'#ff8c42', sad:'#8888bb',
+  happy:'#7effd4', neutral:var_accent(), sleeping:'#b39ddb', eating:'#ffcc44',
+};
+function var_accent(){ return '#ff9de2'; }
+
+// ══════════════════════════════════════════
+//  PIXEL ART ENGINE
+// ══════════════════════════════════════════
+const S = 5;
+
+function drawCat(ctx, catId, opts={}) {
+  const { stage='adult', status='neutral', frame=0, scale=S } = opts;
+  const cat = CATS[catId];
+  if (!cat) return;
+  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  if (stage === 'egg') { drawEgg(ctx, frame, scale, cat.palette); return; }
+  if (status === 'dead') { drawSkull(ctx, scale); return; }
+
+  const p = cat.palette;
+  const sc = scale;
+  const blink    = frame%90 > 85;
+  const sleeping = status === 'sleeping';
+  const eating   = status === 'eating';
+  const sad      = status === 'sad' || status === 'sick';
+  const happy    = status === 'happy';
+  const walkF    = Math.floor(frame/8)%2;
+  const tailSwg  = Math.floor(frame/18)%2;
+  const jumpY    = happy ? Math.round(Math.abs(Math.sin(frame*.15))*-3) : 0;
+  const breathY  = sleeping ? (Math.sin(frame*.05)>.0?0:1) : 0;
+  const isAdult  = stage==='adult';
+  const isBaby   = stage==='baby';
+
+  function px(col,x,y,w=1,h=1){
+    if(!col||col==='none') return;
+    ctx.fillStyle=col;
+    ctx.fillRect(x*sc,(y+jumpY+breathY)*sc,w*sc,h*sc);
+  }
+
+  // Orejas
+  px(p.body,  3,2,2,3); px(p.earIn, 3,3,1,2);
+  px(p.body, 11,2,2,3); px(p.earIn,12,3,1,2);
+
+  // Cabeza
+  px(p.body, 2,4,12,8); px(p.body,3,3,10,2);
+  px(p.body, 1,5,1,6);  px(p.body,14,5,1,6);
+
+  // Rayas tigre (solo bebesita)
+  if (catId==='bebesita' && p.stripes) {
+    px(p.stripes,3,4,1,3); px(p.stripes,12,4,1,3);
+    px(p.stripes,5,3,1,2); px(p.stripes,10,3,1,2);
+  }
+  // Sombra (orus más blanca necesita sombra sutil)
+  if (catId==='orus') {
+    px(p.shadow,11,5,3,3); px(p.shadow,11,9,3,2);
+  }
+
+  // Ojos
+  if (!blink && !sleeping) {
+    px(p.eye1,4,5,3,3); px('#000000',5,5,1,3); px('#ffffff',4,5,1,1);
+    px(p.eye1,9,5,3,3); px('#000000',10,5,1,3); px('#ffffff',9,5,1,1);
+  } else {
+    px(p.shadow,4,6,3,1); px(p.shadow,9,6,3,1);
+  }
+
+  // Nariz
+  px(p.nose, 7,8,2,1); px(p.noseLo,7,9,2,1);
+
+  // Boca
+  if (eating) {
+    px('#cc4444',6,10,4,2); // boca abierta
+  } else if (sad) {
+    px('#000000',6,11,1,1); px('#000000',9,11,1,1); px('#000000',7,10,2,1);
+  } else {
+    px('#000000',6,10,1,1); px('#000000',9,10,1,1); px('#000000',7,10,2,1);
+  }
+
+  // Bigotes
+  const wy = (9+jumpY+breathY)*sc;
+  ctx.fillStyle = p.whisker;
+  ctx.fillRect(0,wy,4*sc,1); ctx.fillRect(0,wy+sc,3*sc,1);
+  ctx.fillRect(12*sc,wy,4*sc,1); ctx.fillRect(13*sc,wy+sc,3*sc,1);
+
+  // Cuerpo
+  if (!isBaby) {
+    px(p.body,3,12,10,6); px(p.body,2,13,1,4); px(p.body,13,13,1,4);
+    px(p.chest,6,13,4,3);
+    // rayas cuerpo bebesita
+    if (catId==='bebesita' && p.stripes) {
+      px(p.stripes,4,13,1,5); px(p.stripes,11,13,1,5);
+      px(p.stripes,7,12,2,1);
+    }
+  } else {
+    px(p.body,4,12,8,4); px(p.chest,6,13,4,2);
+  }
+
+  // Patas
+  if (!isBaby) {
+    const p1 = walkF===1?1:0;
+    px(p.body,4,18-p1,2,2); px(p.body,10,18+p1,2,2);
+    px(p.pad,4,19-p1,2,1);  px(p.pad,10,19+p1,2,1);
+  } else {
+    px(p.body,5,16,2,2); px(p.body,9,16,2,2);
+  }
+
+  // Cola
+  if (!isBaby) {
+    px(p.tail,14,15+tailSwg,2,1); px(p.tail,15,14+tailSwg,2,1);
+    px(p.tail,16,13+tailSwg,2,2);
+  }
+
+  // Especial adulta
+  if (isAdult) {
+    if (catId==='haku') {
+      // Corona dorada
+      ctx.fillStyle=p.special;
+      const gy=jumpY+breathY;
+      ctx.fillRect(6*sc,gy*sc,4*sc,sc);
+      [[6,0,1,2],[8,0,1,2],[10,0,1,2]].forEach(([x,y,w,h])=>ctx.fillRect(x*sc,(y+gy)*sc,w*sc,h*sc));
+    } else if (catId==='orus') {
+      // Halo azul
+      ctx.strokeStyle=p.special; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(8*sc,(1+jumpY+breathY)*sc,4*sc,.5*sc,0,0,Math.PI*2); ctx.stroke();
+    } else if (catId==='bebesita') {
+      // Lazo naranja
+      ctx.fillStyle=p.special;
+      ctx.fillRect(7*sc,(jumpY+breathY)*sc,2*sc,sc);
+      ctx.fillRect(5*sc,(jumpY+breathY)*sc,2*sc,2*sc);
+      ctx.fillRect(9*sc,(jumpY+breathY)*sc,2*sc,2*sc);
+    }
+  }
+
+  // FX por estado
+  if (sad && !sleeping) {
+    const ty=((frame*1.5)%(sc*8));
+    ctx.fillStyle='#88ccff';
+    ctx.fillRect(5*sc,6*sc+ty,sc,sc);
+    ctx.fillRect(11*sc,(6*sc+(ty+sc*3))%(sc*8),sc,sc);
+  }
+  if (sleeping) {
+    const zA=(Math.sin(frame*.05)+1)/2;
+    ctx.fillStyle=`rgba(160,210,255,${zA})`;
+    ctx.font=`bold ${sc*2}px monospace`;
+    ctx.fillText('z',15*sc,(6-(frame%60)*.08)*sc);
+  }
+  if (happy && frame%20<10) {
+    ctx.fillStyle='#ffe566';
+    ctx.font=`${sc}px monospace`;
+    ctx.fillText('★',0,(5+jumpY)*sc);
+    ctx.fillText('★',15*sc,(5+jumpY)*sc);
+  }
+  if (eating) {
+    ctx.fillStyle='#cc8844'; ctx.fillRect(13*sc,17*sc,4*sc,2*sc);
+    ctx.fillStyle='#ffaa44'; ctx.fillRect(13*sc,16*sc,4*sc,sc);
+  }
+  // Corazoncitos si mimos
+  if (status==='petted' || (happy && frame%30<8)) {
+    ctx.fillStyle='#ff9de2'; ctx.font=`${sc}px monospace`;
+    ctx.fillText('♥',1*sc,(3+jumpY)*sc);
+  }
+}
+
+function drawEgg(ctx, frame, sc, pal) {
+  const w = Math.sin(frame*.12)*2;
+  ctx.save(); ctx.translate(8*sc+w,0);
+  const eggCol = '#fff8d0', eggSh = '#e8c840';
+  [[2,4,12,2],[1,6,14,6],[2,12,12,4],[3,16,10,2]].forEach(([x,y,w,h])=>{
+    ctx.fillStyle=eggCol; ctx.fillRect(x*sc,y*sc,w*sc,h*sc);
+  });
+  ctx.fillStyle=eggSh;
+  ctx.fillRect(11*sc,5*sc,3*sc,10*sc); ctx.fillRect(10*sc,15*sc,3*sc,2*sc);
+  const blink2=frame%70>65;
+  ctx.fillStyle='#333';
+  if(!blink2){ ctx.fillRect(5*sc,9*sc,2*sc,2*sc); ctx.fillRect(9*sc,9*sc,2*sc,2*sc); }
+  else { ctx.fillRect(5*sc,10*sc,2*sc,sc); ctx.fillRect(9*sc,10*sc,2*sc,sc); }
+  ctx.fillRect(7*sc,12*sc,2*sc,sc);
+  ctx.restore();
+}
+
+function drawSkull(ctx, sc) {
+  ctx.fillStyle='#cccccc';
+  [[3,4,10,8],[2,6,1,6],[13,6,1,6],[4,12,8,4],[4,16,2,2],[8,16,2,2],[6,16,2,1]].forEach(([x,y,w,h])=>{
+    ctx.fillRect(x*sc,y*sc,w*sc,h*sc);
+  });
+  ctx.fillStyle='#333';
+  [[4,6],[5,7],[6,6],[9,6],[10,7],[11,6]].forEach(([x,y])=>ctx.fillRect(x*sc,y*sc,sc,sc));
+  ctx.fillStyle='#555'; ctx.font=`bold ${sc*2}px monospace`; ctx.fillText('RIP',3*sc,21*sc);
+}
+
+// ══════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════
+const TICK_MS = 5000;
+const COOLDOWNS = { feed:3000, play:4000, sleep:8000, heal:5000, pet:2000, groom:6000 };
+
+let state = {
+  catId:'haku', petName:'Haku',
+  hunger:80, happy:80, energy:80, health:100,
+  alive:true, sleeping:false, evoStage:'egg',
+  birthTime:Date.now(), totalSec:0,
+  coins:0, unlockedCats:['haku'],
+};
+
+let tickIv=null, timerIv=null, toastTO=null;
+let cooldowns={ feed:0,play:0,sleep:0,heal:0,pet:0,groom:0 };
+let animF=0, eatingF=0, gameRAF=null;
+
+// DOM refs
+const $=id=>document.getElementById(id);
+const el={
+  welcomeSc:$('welcome-screen'), gameSc:$('game-screen'),
+  nameInput:$('pet-name-input'), startBtn:$('start-btn'),
+  nameDisplay:$('pet-name-display'), breedTag:$('cat-breed-tag'),
+  evoBadge:$('evo-badge'), timer:$('timer'), coins:$('coin-count'),
+  gameCanvas:$('game-canvas'), welcomeCanvas:$('welcome-canvas'),
+  statusRibbon:$('status-ribbon'), bubble:$('bubble'),
+  fillHunger:$('fill-hunger'), fillHappy:$('fill-happy'),
+  fillEnergy:$('fill-energy'), fillHealth:$('fill-health'),
+  valHunger:$('val-hunger'), valHappy:$('val-happy'),
+  valEnergy:$('val-energy'), valHealth:$('val-health'),
+  btnFeed:$('btn-feed'), btnPlay:$('btn-play'), btnSleep:$('btn-sleep'),
+  btnHeal:$('btn-heal'), btnPet:$('btn-pet'), btnGroom:$('btn-groom'),
+  restartZone:$('restart-zone'), toast:$('toast'),
+  unlockModal:$('unlock-modal'), modalTitle:$('modal-title'),
+  modalDesc:$('modal-desc'), modalCanvas:$('modal-canvas'),
+  catsRow:$('cats-row'),
+};
+const ctxGame=el.gameCanvas.getContext('2d');
+const ctxWelcome=el.welcomeCanvas.getContext('2d');
+const ctxModal=el.modalCanvas.getContext('2d');
+
+// ══════════════════════════════════════════
+//  WELCOME SCREEN CAT CARDS
+// ══════════════════════════════════════════
+let selectedCatId = 'haku';
+
+function buildCatCards() {
+  el.catsRow.innerHTML = '';
+  Object.values(CATS).forEach(cat => {
+    const locked = !state.unlockedCats.includes(cat.id);
+    const sel = selectedCatId===cat.id;
+    const div = document.createElement('div');
+    div.className = 'cat-card'+(sel?' selected':'')+(locked?' locked':'');
+    div.innerHTML = `
+      <canvas width="48" height="48" style="image-rendering:pixelated;" id="card-canvas-${cat.id}"></canvas>
+      <div class="cat-card-name">${cat.name}</div>
+      ${locked
+        ? `<div class="lock-badge">🔒</div><div class="cat-card-hint">${getUnlockHint(cat)}</div>`
+        : `<div class="cat-stat-pills">
+            <div class="cat-stat-pill"><span class="pill-label">🍣</span><span class="pill-val">${getStatLabel(cat.decayMult.hunger)}</span></div>
+            <div class="cat-stat-pill"><span class="pill-label">😸</span><span class="pill-val">${getStatLabel(cat.decayMult.happy)}</span></div>
+            <div class="cat-stat-pill"><span class="pill-label">⚡</span><span class="pill-val">${getStatLabel(cat.decayMult.energy)}</span></div>
+           </div>`
+      }
+    `;
+    if (!locked) {
+      div.addEventListener('click', ()=>{ selectedCatId=cat.id; buildCatCards(); });
+    }
+    el.catsRow.appendChild(div);
+    // Dibujar mini sprite en la tarjeta
+    const cvs = document.getElementById('card-canvas-'+cat.id);
+    if (cvs) {
+      const c = cvs.getContext('2d');
+      drawCat(c, cat.id, { stage: locked?'egg':'adult', status:'happy', frame:0, scale:3 });
+    }
+  });
+}
+
+function getUnlockHint(cat) {
+  if (!cat.unlockReq) return '';
+  const r = cat.unlockReq;
+  if (r.type==='evo')  return `Lleva Haku a ${EVO[r.stage].label}`;
+  if (r.type==='time') return `Juega ${r.minutes} min`;
+  return '';
+}
+function getStatLabel(mult) {
+  if (mult<=0.6) return '★★★ BAJO';
+  if (mult<=0.85) return '★★☆ MEDIO';
+  return '★☆☆ ALTO';
+}
+
+// Mini animación welcome card
+let wF=0;
+function loopWelcome() {
+  wF++;
+  drawCat(ctxWelcome, selectedCatId, {stage:'adult',status:'happy',frame:wF,scale:4});
+  // Re-draw card canvases con animación simple
+  Object.keys(CATS).forEach(id=>{
+    const cvs=document.getElementById('card-canvas-'+id);
+    if(cvs){
+      const c=cvs.getContext('2d');
+      const locked=!state.unlockedCats.includes(id);
+      drawCat(c,id,{stage:locked?'egg':'adult',status:id===selectedCatId?'happy':'neutral',frame:wF,scale:3});
+    }
+  });
+  requestAnimationFrame(loopWelcome);
+}
+
+// ══════════════════════════════════════════
+//  GAME CANVAS LOOP
+// ══════════════════════════════════════════
+function getVisStatus() {
+  if (!state.alive)      return 'dead';
+  if (eatingF>0)         return 'eating';
+  if (state.sleeping)    return 'sleeping';
+  if (state.health<30)   return 'sick';
+  const avg=(state.hunger+state.happy+state.energy)/3;
+  if (avg<35)            return 'sad';
+  if (avg>=70)           return 'happy';
+  return 'neutral';
+}
+
+function loopGame() {
+  if (eatingF>0) eatingF--;
+  const vs=getVisStatus();
+  drawCat(ctxGame, state.catId, {stage:state.evoStage,status:vs,frame:animF,scale:S});
+  animF++;
+  gameRAF=requestAnimationFrame(loopGame);
+}
+
+// ══════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════
+const clamp=(v,lo=0,hi=100)=>Math.max(lo,Math.min(hi,v));
+const fmtTime=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+
+function getStatus() {
+  if (!state.alive)    return 'dead';
+  if (state.sleeping)  return 'sleeping';
+  if (state.health<30) return 'sick';
+  const avg=(state.hunger+state.happy+state.energy)/3;
+  if (avg<35) return 'sad';
+  if (avg>=70) return 'happy';
+  return 'neutral';
+}
+function getEvoStage() {
+  const s=state.totalSec;
+  if(s>=EVO.adult.sec) return 'adult';
+  if(s>=EVO.teen.sec)  return 'teen';
+  if(s>=EVO.child.sec) return 'child';
+  if(s>=EVO.baby.sec)  return 'baby';
+  return 'egg';
+}
+function catDecay(key) {
+  const base=DECAY_BASE[state.evoStage]||DECAY_BASE.adult;
+  const mult=CATS[state.catId].decayMult;
+  return base[key]*mult[key];
+}
+
+// ══════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════
+function render() {
+  const st=getStatus();
+  el.statusRibbon.textContent = STATUS_TEXT[st]||STATUS_TEXT.neutral;
+  el.statusRibbon.style.color = STATUS_COL[st]||'#ff9de2';
+  renderBar(el.fillHunger,el.valHunger,state.hunger);
+  renderBar(el.fillHappy, el.valHappy,  state.happy);
+  renderBar(el.fillEnergy,el.valEnergy, state.energy);
+  renderBar(el.fillHealth,el.valHealth, state.health);
+  el.evoBadge.textContent=EVO[state.evoStage].label;
+  el.coins.textContent=state.coins;
+  const dead=!state.alive, slp=state.sleeping;
+  el.btnFeed.disabled  = dead||slp;
+  el.btnPlay.disabled  = dead||slp||state.energy<10;
+  el.btnSleep.disabled = dead||slp;
+  el.btnHeal.disabled  = dead||slp;
+  el.btnPet.disabled   = dead||slp;
+  el.btnGroom.disabled = dead||slp;
+  el.restartZone.style.display=dead?'flex':'none';
+}
+function renderBar(fillEl,valEl,v) {
+  const pct=clamp(Math.round(v));
+  fillEl.style.width=pct+'%';
+  valEl.textContent=pct;
+  fillEl.classList.toggle('low',pct<25);
+}
+
+// ══════════════════════════════════════════
+//  TOAST & BUBBLE
+// ══════════════════════════════════════════
+function toast(msg,warn=false) {
+  clearTimeout(toastTO);
+  el.toast.textContent=msg;
+  el.toast.className='toast show'+(warn?' warn':'');
+  toastTO=setTimeout(()=>el.toast.className='toast',2400);
+}
+function bubble(emoji) {
+  el.bubble.textContent=emoji;
+  el.bubble.className='bubble pop';
+  setTimeout(()=>el.bubble.className='bubble',700);
+}
+
+// ══════════════════════════════════════════
+//  UNLOCK SYSTEM
+// ══════════════════════════════════════════
+function checkUnlocks() {
+  Object.values(CATS).forEach(cat=>{
+    if (state.unlockedCats.includes(cat.id) || !cat.unlockReq) return;
+    const r=cat.unlockReq;
+    let unlocked=false;
+    if (r.type==='evo' && r.catId===state.catId && state.evoStage===r.stage) unlocked=true;
+    if (r.type==='time' && state.totalSec>=r.minutes*60) unlocked=true;
+    if (unlocked) triggerUnlock(cat);
+  });
+}
+function triggerUnlock(cat) {
+  state.unlockedCats.push(cat.id);
+  state.coins+=50;
+  saveState();
+  drawCat(ctxModal,cat.id,{stage:'adult',status:'happy',frame:0,scale:4});
+  el.modalTitle.textContent='🎉 ¡'+cat.name.toUpperCase()+' DESBLOQUEADA!';
+  el.modalDesc.textContent=cat.unlockMsg+'\n\n'+cat.specialty+'\n\n+50 🐟 peces';
+  el.unlockModal.classList.add('open');
+}
+function closeModal() { el.unlockModal.classList.remove('open'); }
+
+// ══════════════════════════════════════════
+//  TICK
+// ══════════════════════════════════════════
+function tick() {
+  if (!state.alive) return;
+  const name=state.petName;
+  if (state.sleeping) {
+    state.energy=clamp(state.energy+5);
+    state.hunger=clamp(state.hunger-.5);
+    state.happy=clamp(state.happy-.3);
+    state.health=clamp(state.health-.1);
+    if(state.energy>=90){ state.sleeping=false; toast('¡'+name+' despertó! 🌅'); }
+  } else {
+    state.hunger=clamp(state.hunger-catDecay('hunger'));
+    state.happy =clamp(state.happy -catDecay('happy'));
+    state.energy=clamp(state.energy-catDecay('energy'));
+    const crit=[state.hunger,state.happy,state.energy].filter(v=>v<10).length;
+    if(crit>0) state.health=clamp(state.health-catDecay('health')*(crit*2));
+  }
+  if(state.health<=0){ die(); return; }
+  if(state.hunger<20)      toast('⚠️ ¡'+name+' tiene hambre!',true);
+  else if(state.happy<20)  toast('⚠️ ¡'+name+' quiere mimos!',true);
+  else if(state.energy<15) toast('⚠️ ¡'+name+' está agotada!',true);
+  else if(state.health<25) toast('⚠️ ¡'+name+' está enferma!',true);
+  checkUnlocks();
+  saveState(); render();
+}
+
+function die() {
+  state.alive=false;
+  clearInterval(tickIv); clearInterval(timerIv);
+  toast('💔 '+state.petName+' descansa en paz... 😿',true);
+  saveState(); render();
+}
+
+function startTimer() {
+  timerIv=setInterval(()=>{
+    state.totalSec++;
+    el.timer.textContent=fmtTime(state.totalSec);
+    // Coins por tiempo
+    if(state.totalSec%60===0){ state.coins+=5; }
+    const newEvo=getEvoStage();
+    if(newEvo!==state.evoStage){
+      state.evoStage=newEvo;
+      toast('✨ ¡'+state.petName+' evolucionó! → '+EVO[newEvo].label);
+      checkUnlocks();
+    }
+  },1000);
+}
+
+// ══════════════════════════════════════════
+//  COOLDOWN
+// ══════════════════════════════════════════
+function cd(action) {
+  const now=Date.now();
+  if(now-cooldowns[action]<COOLDOWNS[action]){
+    toast('⏳ Espera '+Math.ceil((COOLDOWNS[action]-(now-cooldowns[action]))/1000)+'s...',true);
+    return false;
+  }
+  cooldowns[action]=now; return true;
+}
+
+// ══════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════
+const act = {
+  feed(){
+    if(!state.alive||state.sleeping) return;
+    if(!cd('feed')) return;
+    state.hunger=clamp(state.hunger+25);
+    state.coins=clamp(state.coins+2,0,9999);
+    eatingF=70;
+    toast('🍣 ¡Ñom ñom! +25 Hambre +2🐟');
+    bubble('🍣'); render(); saveState();
+  },
+  play(){
+    if(!state.alive||state.sleeping) return;
+    if(state.energy<10){ toast('⚡ Sin energía para jugar',true); return; }
+    if(!cd('play')) return;
+    state.happy =clamp(state.happy +20);
+    state.energy=clamp(state.energy-15);
+    state.hunger=clamp(state.hunger-5);
+    state.coins =clamp(state.coins+3,0,9999);
+    toast('🧶 ¡Purrr! +20 Mimos +3🐟');
+    bubble('🧶'); render(); saveState();
+  },
+  sleep(){
+    if(!state.alive||state.sleeping) return;
+    if(!cd('sleep')) return;
+    state.sleeping=true;
+    toast('😴 '+state.petName+' se fue a dormir...');
+    bubble('💤'); render(); saveState();
+  },
+  heal(){
+    if(!state.alive||state.sleeping) return;
+    if(!cd('heal')) return;
+    state.health=clamp(state.health+30);
+    toast('💊 ¡Mucho mejor! +30 Salud');
+    bubble('💊'); render(); saveState();
+  },
+  pet(){
+    if(!state.alive||state.sleeping) return;
+    if(!cd('pet')) return;
+    state.happy=clamp(state.happy+12);
+    state.coins=clamp(state.coins+1,0,9999);
+    toast('🤚 ¡Purrpurrpurr~ ♥ +12 Mimos');
+    bubble('♥'); render(); saveState();
+  },
+  groom(){
+    if(!state.alive||state.sleeping) return;
+    if(!cd('groom')) return;
+    state.health=clamp(state.health+10);
+    state.happy =clamp(state.happy+8);
+    toast('✨ ¡Qué guapa! +10 Salud +8 Mimos');
+    bubble('✨'); render(); saveState();
+  },
+};
+
+// ══════════════════════════════════════════
+//  PERSISTENCE
+// ══════════════════════════════════════════
+function saveState(){ localStorage.setItem('nekolife_v2',JSON.stringify(state)); }
+function loadState(){
+  const raw=localStorage.getItem('nekolife_v2');
+  if(!raw) return false;
+  try{
+    const saved=JSON.parse(raw);
+    const now=Date.now();
+    const elapsed=Math.floor((now-(saved.birthTime+saved.totalSec*1000))/1000);
+    saved.totalSec+=elapsed;
+    const pen=Math.min(elapsed/(TICK_MS/1000),60);
+    const cat=CATS[saved.catId]||CATS.haku;
+    const base=DECAY_BASE[saved.evoStage]||DECAY_BASE.adult;
+    saved.hunger=clamp(saved.hunger-base.hunger*cat.decayMult.hunger*pen);
+    saved.happy =clamp(saved.happy -base.happy *cat.decayMult.happy *pen);
+    saved.energy=clamp(saved.energy-base.energy*cat.decayMult.energy*pen);
+    saved.health=clamp(saved.health-base.health*cat.decayMult.health*pen);
+    Object.assign(state,saved);
+    return true;
+  }catch(e){ return false; }
+}
+
+// ══════════════════════════════════════════
+//  GAME CONTROLLER
+// ══════════════════════════════════════════
+const game = {
+  start(catId, name){
+    const cat=CATS[catId]||CATS.haku;
+    state.catId    = cat.id;
+    state.petName  = name||cat.name;
+    state.birthTime= Date.now();
+    state.totalSec = 0;
+    state.evoStage = 'egg';
+    state.sleeping = false;
+    state.alive    = true;
+    Object.assign(state, cat.startStats);
+    el.nameDisplay.textContent = state.petName;
+    el.breedTag.textContent    = cat.breed;
+    el.timer.textContent       = '00:00';
+    el.welcomeSc.classList.remove('active');
+    el.gameSc.classList.add('active');
+    saveState(); render();
+    tickIv=setInterval(tick,TICK_MS);
+    startTimer(); loopGame();
+    toast('¡Bienvenida, '+state.petName+'! 🐱');
+  },
+  resume(){
+    const cat=CATS[state.catId]||CATS.haku;
+    el.nameDisplay.textContent=state.petName;
+    el.breedTag.textContent=cat.breed;
+    el.timer.textContent=fmtTime(state.totalSec);
+    el.welcomeSc.classList.remove('active');
+    el.gameSc.classList.add('active');
+    render();
+    if(state.alive){ tickIv=setInterval(tick,TICK_MS); startTimer(); }
+    loopGame();
+  },
+  reset(){
+    clearInterval(tickIv); clearInterval(timerIv);
+    if(gameRAF) cancelAnimationFrame(gameRAF);
+    const unlocked=state.unlockedCats; // mantener desbloqueos
+    state={ catId:'haku',petName:'Haku',hunger:80,happy:80,energy:80,health:100,
+      alive:true,sleeping:false,evoStage:'egg',birthTime:Date.now(),totalSec:0,
+      coins:0, unlockedCats:unlocked };
+    saveState();
+    el.gameSc.classList.remove('active');
+    el.welcomeSc.classList.add('active');
+    el.nameInput.value='';
+    selectedCatId='haku';
+    buildCatCards();
+  },
+};
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+el.startBtn.addEventListener('click',()=>{
+  if(!state.unlockedCats.includes(selectedCatId)){ toast('🔒 ¡Esta gata aún está bloqueada!',true); return; }
+  game.start(selectedCatId, el.nameInput.value.trim());
+});
+el.nameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') el.startBtn.click(); });
+window.closeModal=closeModal;
+
+window.addEventListener('DOMContentLoaded',()=>{
+  if(loadState()){
+    buildCatCards();
+    loopWelcome();
+    game.resume();
+  } else {
+    buildCatCards();
+    loopWelcome();
+    el.nameInput.focus();
+  }
+});
+</script>
+</body>
+</html>
